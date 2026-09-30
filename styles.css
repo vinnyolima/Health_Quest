@@ -1,0 +1,47 @@
+:root {
+  --bg:#f4f7f5; --card:#ffffff; --ink:#153c38; --muted:#72817e; --line:#dce7e2;
+  --green:#267862; --green-dark:#1c594a; --green-soft:#e8f4ef; --gold:#a87816;
+  --gold-soft:#fff7df; --red:#aa4747; --shadow:0 10px 30px rgba(22,60,56,.06);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}
+button{border:1px solid var(--line);background:white;color:var(--ink);border-radius:12px;padding:11px 14px;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.primary{background:var(--green);border-color:var(--green);color:white;font-weight:800}
+button.primary:hover{background:var(--green-dark)}
+button.danger{color:var(--red);border-color:#edcaca}
+button.wide{width:100%;margin-top:14px}
+button.text-button{background:transparent;border:0;padding:8px;color:var(--muted)}
+button.small-button{padding:7px 10px;font-size:.85rem}
+input,select{width:100%;border:1px solid var(--line);border-radius:11px;background:#fff;color:var(--ink);padding:12px;outline:none}
+input:focus,select:focus{border-color:#83b7a8;box-shadow:0 0 0 3px rgba(38,120,98,.08)}
+label{display:block;font-size:.88rem;font-weight:750;color:#38534e}
+label input,label select{margin-top:6px}
+.app-shell{max-width:1050px;margin:0 auto;padding:18px max(12px,env(safe-area-inset-left)) 36px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 16px}
+h1,h2,h3,p{margin-top:0} h1{font-size:1.75rem;margin-bottom:0} h2{font-size:1.45rem} h3{font-size:1.12rem;margin-bottom:0}
+.eyebrow{font-size:.7rem;letter-spacing:.13em;font-weight:900;color:var(--muted);margin-bottom:5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.intro-card{max-width:680px;margin:30px auto}.intro-card>p{color:var(--muted)}
+.hero-icon{font-size:2.1rem;margin-bottom:8px}
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0 12px}
+.help-box{margin-top:16px;color:var(--muted);font-size:.9rem}.help-box summary{cursor:pointer;font-weight:700;color:#4f6863}
+.hidden{display:none!important}.muted{color:var(--muted)}
+.message{min-height:1.25em;margin:10px 0 0;color:var(--muted)}.message.error{color:var(--red)}.message.success{color:var(--green)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.pill,.status-chip{display:inline-flex;align-items:center;border-radius:999px;background:var(--green-soft);padding:6px 10px;font-size:.8rem;font-weight:850;color:var(--green-dark)}
+.status-chip.failed{background:#fbeaea;color:var(--red)}.status-chip.verified{background:var(--green-soft);color:var(--green-dark)}.status-chip.excused{background:#f1f0ed;color:#6c665b}
+.goal-editor{display:grid;gap:10px;margin-top:16px}.goal-row{display:grid;grid-template-columns:1.2fr 1fr 1fr .7fr;gap:12px;align-items:end;border:1px solid var(--line);border-radius:15px;padding:13px}.goal-title{font-size:1.05rem;font-weight:900;padding-bottom:11px}.goal-reward{font-weight:900;text-align:right;padding-bottom:11px;color:var(--gold)}
+.hero-card{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(145deg,#fff,#f5fbf8)}
+.xp-orb{min-width:90px;height:90px;border-radius:50%;background:var(--green);color:white;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 12px 24px rgba(38,120,98,.18)}.xp-orb strong{font-size:1.7rem;line-height:1}.xp-orb span{font-size:.72rem;font-weight:900;letter-spacing:.1em;margin-top:4px}
+.two-col{display:grid;grid-template-columns:1.35fr .9fr;gap:16px}.compact-select{width:auto;min-width:125px;padding:8px 10px}
+.daily-tasks{display:grid;gap:9px}.task-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:15px;padding:12px}.task-name strong{display:block}.task-name small{display:block;color:var(--muted);margin-top:2px}.check-toggle{display:flex;align-items:center;gap:6px;font-size:.82rem;white-space:nowrap}.check-toggle input{width:auto;margin:0;transform:scale(1.15)}
+.random-card{background:linear-gradient(145deg,#fff,#fffaf0)}.random-check-box{border:1px solid #eadcb1;background:var(--gold-soft);border-radius:15px;padding:16px}.random-name{font-size:1.25rem;font-weight:900;margin:4px 0}.random-category{font-size:1.05rem;font-weight:800}.verification-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.leader-row{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}.leader-row:last-child{border-bottom:0}.rank{font-weight:950;color:var(--muted)}.leader-name{font-weight:850}.leader-score{font-weight:950}.bar{height:8px;background:#edf3f0;border-radius:999px;overflow:hidden;margin-top:7px}.bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--green),#4ca88b);border-radius:inherit}
+.progress-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.progress-card{border:1px solid var(--line);border-radius:16px;padding:14px}.progress-title{font-weight:900}.progress-number{font-size:1.45rem;font-weight:950;margin:6px 0 0}.progress-meta{font-size:.82rem;color:var(--muted);margin-top:7px}.xp-breakdown{font-size:.8rem;color:#526763;margin-top:8px}
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rules-grid>div{border:1px solid var(--line);border-radius:14px;padding:12px}.rules-grid strong,.rules-grid span{display:block}.rules-grid span{color:var(--muted);font-size:.88rem;margin-top:4px}
+@media(max-width:760px){
+  .app-shell{padding-top:12px}.card{padding:16px;border-radius:17px}.field-grid,.two-col{grid-template-columns:1fr}.goal-row{grid-template-columns:1fr 1fr}.goal-title{grid-column:1/-1;padding-bottom:0}.goal-reward{text-align:left;padding-bottom:0}.progress-grid{grid-template-columns:1fr 1fr}.rules-grid{grid-template-columns:1fr}.hero-card{align-items:flex-start}.xp-orb{min-width:78px;width:78px;height:78px}.task-row{grid-template-columns:1fr auto}.task-row .extra-toggle{grid-column:2}.topbar h1{font-size:1.5rem}
+}

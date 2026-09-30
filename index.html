@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#143b37">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>Health Quest</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">FRIEND HEALTH CHALLENGE</div>
+        <h1>Health Quest</h1>
+      </div>
+      <button id="logoutBtn" class="text-button hidden">Switch player</button>
+    </header>
+
+    <main>
+      <section id="connectView" class="card intro-card">
+        <div class="hero-icon">🏆</div>
+        <h2>October Health Quest</h2>
+        <p>Connect to your private challenge sheet, then join as one of three players.</p>
+
+        <div class="field-grid">
+          <label>
+            Group code
+            <input id="groupCode" maxlength="8" autocomplete="off" placeholder="ABC123">
+          </label>
+          <label>
+            Group PIN
+            <input id="groupPin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="1234">
+          </label>
+        </div>
+
+        <label>
+          Your name
+          <input id="playerName" maxlength="24" autocomplete="name" placeholder="e.g. Alex">
+        </label>
+
+        <button id="joinBtn" class="primary wide">Join challenge</button>
+        <p id="connectMsg" class="message"></p>
+        <details class="help-box">
+          <summary>Where do I get the group code and PIN?</summary>
+          <p>The spreadsheet owner gets both from the <strong>Config</strong> tab after running the included Google Apps Script setup.</p>
+        </details>
+      </section>
+
+      <section id="setupView" class="hidden">
+        <div class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">SET YOUR PERSONAL CHALLENGE</div>
+              <h2>Rank your habits</h2>
+            </div>
+            <span id="setupPlayerName" class="pill"></span>
+          </div>
+          <p class="muted">Use each difficulty rank once. Rank #1 is your hardest habit. Then choose how many October days you want to complete each habit.</p>
+          <div id="goalEditor" class="goal-editor"></div>
+          <button id="saveGoalsBtn" class="primary wide">Save goals</button>
+          <p id="goalMsg" class="message"></p>
+        </div>
+      </section>
+
+      <section id="gameView" class="hidden">
+        <div class="card hero-card">
+          <div>
+            <div id="groupLabel" class="eyebrow"></div>
+            <h2 id="welcomeText">Your challenge</h2>
+            <div id="challengeStatus" class="muted"></div>
+          </div>
+          <div class="xp-orb">
+            <strong id="myXp">0</strong>
+            <span>XP</span>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <div class="eyebrow">DAILY CHECK-IN</div>
+                <h3 id="checkinDateLabel">Today</h3>
+              </div>
+              <select id="datePicker" class="compact-select"></select>
+            </div>
+            <div id="dailyTasks" class="daily-tasks"></div>
+            <button id="saveCheckinBtn" class="primary wide">Save check-in</button>
+            <p id="checkinMsg" class="message"></p>
+          </section>
+
+          <section class="card random-card">
+            <div class="section-head">
+              <div>
+                <div class="eyebrow">DAILY RANDOM CHECK</div>
+                <h3>🎲 Verification</h3>
+              </div>
+              <span id="verificationStatus" class="status-chip">Pending</span>
+            </div>
+            <div id="randomCheckBox" class="random-check-box"></div>
+            <div id="verificationButtons" class="verification-buttons hidden">
+              <button data-status="Verified">Verified</button>
+              <button data-status="Failed" class="danger">Failed</button>
+              <button data-status="Excused">Excused</button>
+            </div>
+          </section>
+        </div>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">FRIENDLY COMPETITION</div>
+              <h3>Leaderboard</h3>
+            </div>
+            <button id="refreshBtn" class="small-button">Refresh</button>
+          </div>
+          <div id="leaderboard"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">YOUR MONTH</div>
+              <h3>Goal progress</h3>
+            </div>
+            <span class="muted">October 1–31</span>
+          </div>
+          <div id="progressGrid" class="progress-grid"></div>
+        </section>
+
+        <section class="card rules-card">
+          <div class="eyebrow">HOW SCORING WORKS</div>
+          <div class="rules-grid">
+            <div><strong>🏆 Major goals</strong><span>Most of the XP. Complete your chosen monthly percentage.</span></div>
+            <div><strong>🔥 Streaks</strong><span>Every 3 consecutive days in one category earns +10 XP.</span></div>
+            <div><strong>⚡ Extra effort</strong><span>One extra effort bonus per category per day earns +5 XP.</span></div>
+            <div><strong>🎲 Random check</strong><span>One player and category are frozen for each day. A failed check removes that completion.</span></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <template id="goalRowTemplate">
+    <div class="goal-row">
+      <div class="goal-title"></div>
+      <label>Difficulty
+        <select class="rank-select">
+          <option value="1">#1 hardest</option>
+          <option value="2">#2</option>
+          <option value="3">#3</option>
+          <option value="4">#4 easiest</option>
+        </select>
+      </label>
+      <label>Monthly target
+        <select class="target-select">
+          <option value="0.6">60%</option>
+          <option value="0.7">70%</option>
+          <option value="0.8">80%</option>
+          <option value="0.9">90%</option>
+          <option value="1">100%</option>
+        </select>
+      </label>
+      <div class="goal-reward"></div>
+    </div>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
