@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Health Quest</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <div class="app-shell">
@@ -59,9 +59,9 @@
             </div>
             <span id="setupPlayerName" class="pill"></span>
           </div>
-          <p class="muted">Use each difficulty rank once. Rank #1 is your hardest habit. Then choose how many October days you want to complete each habit.</p>
+          <p class="muted">Use each difficulty rank once. Rank #1 is your hardest habit. Choose your October target, then describe exactly what a successful day means for that category (for example, “Drink 3L of water”).</p>
           <div id="goalEditor" class="goal-editor"></div>
-          <button id="saveGoalsBtn" class="primary wide">Save goals</button>
+          <button id="saveGoalsBtn" class="primary wide">Save goals & definitions</button>
           <p id="goalMsg" class="message"></p>
         </div>
       </section>
@@ -73,9 +73,12 @@
             <h2 id="welcomeText">Your challenge</h2>
             <div id="challengeStatus" class="muted"></div>
           </div>
-          <div class="xp-orb">
-            <strong id="myXp">0</strong>
-            <span>XP</span>
+          <div class="hero-actions">
+            <button id="editGoalsBtn" class="small-button">Edit goal details</button>
+            <div class="xp-orb">
+              <strong id="myXp">0</strong>
+              <span>XP</span>
+            </div>
           </div>
         </div>
 
@@ -132,6 +135,29 @@
           <div id="progressGrid" class="progress-grid"></div>
         </section>
 
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">GROUP GOAL DEFINITIONS</div>
+              <h3>What counts for everyone</h3>
+            </div>
+            <span class="muted">Visible to all players</span>
+          </div>
+          <p class="muted">These descriptions make random verification fair: everyone can see exactly what each player committed to.</p>
+          <div id="groupGoals"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">VERIFICATION HISTORY</div>
+              <h3>Random check audit</h3>
+            </div>
+            <span class="muted">Created checks only</span>
+          </div>
+          <div id="auditLog"></div>
+        </section>
+
         <section class="card rules-card">
           <div class="eyebrow">HOW SCORING WORKS</div>
           <div class="rules-grid">
@@ -166,9 +192,12 @@
         </select>
       </label>
       <div class="goal-reward"></div>
+      <label class="goal-description">What does success look like for you?
+        <textarea class="description-input" maxlength="240" rows="3" placeholder="Example: Drink at least 3L of water today."></textarea>
+      </label>
     </div>
   </template>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app-v4.js?v=4"></script>
 </body>
 </html>

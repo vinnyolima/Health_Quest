@@ -1,7 +1,7 @@
 /**
- * Health Quest — Google Sheets backend
- * Bound this script to the Google Sheet that will store your challenge data.
- * Run setupHealthQuest() once, then deploy as a Web App.
+ * Health Quest — Google Sheets backend v4
+ * Adds detailed goal definitions and random-check audit history.
+ * Run setupHealthQuest() after replacing this file, then redeploy the Web App.
  */
 
 const HQ = {
@@ -23,11 +23,11 @@ function onOpen() {
 
 function setupHealthQuest() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const config = ensureSheet_(ss, HQ.SHEETS.CONFIG, ['Key','Value']);
+  ensureSheet_(ss, HQ.SHEETS.CONFIG, ['Key','Value']);
   ensureSheet_(ss, HQ.SHEETS.PLAYERS, ['PlayerId','Name','JoinedAt']);
-  ensureSheet_(ss, HQ.SHEETS.GOALS, ['PlayerId','Category','DifficultyRank','Target']);
+  ensureSheet_(ss, HQ.SHEETS.GOALS, ['PlayerId','Category','DifficultyRank','Target','Description']);
   ensureSheet_(ss, HQ.SHEETS.CHECKINS, ['Date','PlayerId','Category','Done','Extra','UpdatedAt']);
-  ensureSheet_(ss, HQ.SHEETS.RANDOM, ['Date','PlayerId','Category','Status','UpdatedAt']);
+  ensureSheet_(ss, HQ.SHEETS.RANDOM, ['Date','PlayerId','Category','Status','UpdatedAt','ReviewedBy']);
 
   const cfg = readConfig_();
   if (!cfg.GroupCode) setConfig_('GroupCode', randomCode_(6));
@@ -40,13 +40,13 @@ function setupHealthQuest() {
   SpreadsheetApp.flush();
   const now = readConfig_();
   SpreadsheetApp.getUi().alert(
-    'Health Quest is ready!\n\nGroup code: ' + now.GroupCode + '\nGroup PIN: ' + now.GroupPIN +
-    '\n\nNext: Deploy this Apps Script as a Web App (execute as you; access: Anyone).'
+    'Health Quest v4 is ready!\\n\\nGroup code: ' + now.GroupCode + '\\nGroup PIN: ' + now.GroupPIN +
+    '\\n\\nYour existing data was preserved. Next: redeploy the Apps Script Web App as a new version.'
   );
 }
 
 function doGet() {
-  return json_({ok:true, name:'Health Quest API', version:1});
+  return json_({ok:true, name:'Health Quest API', version:4});
 }
 
 function doPost(e) {
@@ -90,13 +90,48 @@ function join_(p) {
 
 function getState_(p) {
   verifyGroup_(p);
-  const players = dataRows_(sheet_(HQ.SHEETS.PLAYERS)).map(r => ({playerId:String(r[0]),name:String(r[1])}));
+  const players = dataRows_(sheet_(HQ.SHEETS.PLAYERS)).map(r => ({
+    playerId:String(r[0]), name:String(r[1])
+  }));
   if (p.playerId && !players.some(x => x.playerId === String(p.playerId))) throw new Error('Player not found.');
-  const goals = dataRows_(sheet_(HQ.SHEETS.GOALS)).map(r => ({playerId:String(r[0]),category:String(r[1]),rank:Number(r[2]),target:Number(r[3])}));
-  const checkins = dataRows_(sheet_(HQ.SHEETS.CHECKINS)).map(r => ({date:dateString_(r[0]),playerId:String(r[1]),category:String(r[2]),done:toBool_(r[3]),extra:toBool_(r[4])}));
+
+  const goals = dataRows_(sheet_(HQ.SHEETS.GOALS)).map(r => ({
+    playerId:String(r[0]),
+    category:String(r[1]),
+    rank:Number(r[2]),
+    target:Number(r[3]),
+    description:String(r[4] || '')
+  }));
+
+  const checkins = dataRows_(sheet_(HQ.SHEETS.CHECKINS)).map(r => ({
+    date:dateString_(r[0]),
+    playerId:String(r[1]),
+    category:String(r[2]),
+    done:toBool_(r[3]),
+    extra:toBool_(r[4])
+  }));
+
   const date = validChallengeDate_(p.date || todayString_());
   const randomCheck = date ? getOrCreateRandomCheck_(date, players) : null;
-  return {ok:true,state:{players:players,goals:goals,checkins:checkins,randomCheck:randomCheck}};
+
+  const randomChecks = dataRows_(sheet_(HQ.SHEETS.RANDOM))
+    .map(r => ({
+      date:dateString_(r[0]),
+      playerId:String(r[1]),
+      category:String(r[2]),
+      status:String(r[3] || 'Pending'),
+      updatedAt:r[4] instanceof Date ? r[4].toISOString() : String(r[4] || ''),
+      reviewedBy:String(r[5] || '')
+    }))
+    .filter(r => r.date && r.date <= todayString_());
+
+  return {ok:true,state:{
+    players:players,
+    goals:goals,
+    checkins:checkins,
+    randomCheck:randomCheck,
+    randomChecks:randomChecks
+  }};
 }
 
 function saveGoals_(p) {
@@ -104,13 +139,22 @@ function saveGoals_(p) {
   if (!Array.isArray(p.goals) || p.goals.length !== 4) throw new Error('Four goals are required.');
   const ranks = p.goals.map(g => Number(g.rank)).sort().join(',');
   if (ranks !== '1,2,3,4') throw new Error('Use each difficulty rank once.');
+
   p.goals.forEach(g => {
     if (HQ.CATEGORIES.indexOf(String(g.category)) < 0) throw new Error('Invalid category.');
     if ([0.6,0.7,0.8,0.9,1].indexOf(Number(g.target)) < 0) throw new Error('Invalid target.');
+    if (String(g.description || '').length > 240) throw new Error('Goal descriptions must be 240 characters or fewer.');
   });
+
   const sheet = sheet_(HQ.SHEETS.GOALS);
   deleteRowsWhere_(sheet, r => String(r[0]) === String(p.playerId));
-  p.goals.forEach(g => sheet.appendRow([String(p.playerId),String(g.category),Number(g.rank),Number(g.target)]));
+  p.goals.forEach(g => sheet.appendRow([
+    String(p.playerId),
+    String(g.category),
+    Number(g.rank),
+    Number(g.target),
+    cleanDescription_(g.description)
+  ]));
   return {ok:true};
 }
 
@@ -129,14 +173,22 @@ function saveCheckin_(p) {
 function setVerification_(p) {
   verifyGroup_(p); verifyPlayer_(p.playerId);
   const date = validChallengeDate_(p.date); if (!date) throw new Error('Invalid challenge date.');
-  const allowed=['Verified','Failed','Excused']; if(allowed.indexOf(String(p.status))<0) throw new Error('Invalid verification status.');
-  const players = dataRows_(sheet_(HQ.SHEETS.PLAYERS)).map(r=>({playerId:String(r[0]),name:String(r[1])}));
+  const allowed=['Verified','Failed','Excused'];
+  if(allowed.indexOf(String(p.status))<0) throw new Error('Invalid verification status.');
+
+  const players = dataRows_(sheet_(HQ.SHEETS.PLAYERS)).map(r=>({
+    playerId:String(r[0]),name:String(r[1])
+  }));
   const rc = getOrCreateRandomCheck_(date, players);
   const randomSheet = sheet_(HQ.SHEETS.RANDOM);
   const rows = dataRowsWithRow_(randomSheet);
   const row = rows.find(x=>dateString_(x.values[0])===date);
   if(!row) throw new Error('Random check not found.');
-  randomSheet.getRange(row.row,4,1,2).setValues([[String(p.status),new Date()]]);
+
+  randomSheet.getRange(row.row,4,1,3).setValues([[
+    String(p.status), new Date(), String(p.playerId)
+  ]]);
+
   if(String(p.status)==='Failed') {
     const checkSheet=sheet_(HQ.SHEETS.CHECKINS);
     upsertCheckin_(checkSheet,date,rc.playerId,rc.category,false,false);
@@ -149,21 +201,30 @@ function getOrCreateRandomCheck_(date, players) {
   const sheet=sheet_(HQ.SHEETS.RANDOM);
   const rows=dataRowsWithRow_(sheet);
   const existing=rows.find(x=>dateString_(x.values[0])===date);
-  if(existing) return {date:date,playerId:String(existing.values[1]),category:String(existing.values[2]),status:String(existing.values[3]||'Pending')};
-  if (date > todayString_()) return null; // Do not reveal/create future assignments.
+  if(existing) return {
+    date:date,
+    playerId:String(existing.values[1]),
+    category:String(existing.values[2]),
+    status:String(existing.values[3]||'Pending'),
+    reviewedBy:String(existing.values[5]||'')
+  };
+  if (date > todayString_()) return null;
 
   const cfg=readConfig_();
   const h=hash_(String(cfg.GroupCode)+'|'+date);
   const player=players[h % players.length];
   const category=HQ.CATEGORIES[Math.floor(h / Math.max(1,players.length)) % HQ.CATEGORIES.length];
-  sheet.appendRow([date,player.playerId,category,'Pending',new Date()]);
-  return {date:date,playerId:player.playerId,category:category,status:'Pending'};
+  sheet.appendRow([date,player.playerId,category,'Pending',new Date(),'']);
+  return {date:date,playerId:player.playerId,category:category,status:'Pending',reviewedBy:''};
 }
 
 function verifyGroup_(p) {
   const cfg=readConfig_();
   if (!cfg.GroupCode || !cfg.GroupPIN) throw new Error('Spreadsheet is not initialized. Run setupHealthQuest() first.');
-  if (String(p.groupCode||'').toUpperCase() !== String(cfg.GroupCode).toUpperCase() || String(p.pin||'') !== String(cfg.GroupPIN)) throw new Error('Incorrect group code or PIN.');
+  if (
+    String(p.groupCode||'').toUpperCase() !== String(cfg.GroupCode).toUpperCase() ||
+    String(p.pin||'') !== String(cfg.GroupPIN)
+  ) throw new Error('Incorrect group code or PIN.');
 }
 function verifyPlayer_(playerId) {
   const exists=dataRows_(sheet_(HQ.SHEETS.PLAYERS)).some(r=>String(r[0])===String(playerId));
@@ -171,6 +232,7 @@ function verifyPlayer_(playerId) {
 }
 function validChallengeDate_(value) { const d=dateString_(value); return d>=HQ.START && d<=HQ.END ? d : null; }
 function cleanName_(name) { return String(name||'').trim().replace(/[<>]/g,'').slice(0,24); }
+function cleanDescription_(value) { return String(value||'').trim().replace(/[<>]/g,'').slice(0,240); }
 function toBool_(v) { return v===true || String(v).toLowerCase()==='true' || String(v).toLowerCase()==='yes'; }
 function todayString_(){ return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || 'America/New_York', 'yyyy-MM-dd'); }
 function dateString_(v){
@@ -181,21 +243,52 @@ function hash_(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h ^= s.charCod
 function randomCode_(n){ const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let out=''; for(let i=0;i<n;i++) out+=chars[Math.floor(Math.random()*chars.length)]; return out; }
 
 function upsertCheckin_(sheet,date,playerId,category,done,extra){
-  const rows=dataRowsWithRow_(sheet); const found=rows.find(x=>dateString_(x.values[0])===date && String(x.values[1])===playerId && String(x.values[2])===category);
+  const rows=dataRowsWithRow_(sheet);
+  const found=rows.find(x=>dateString_(x.values[0])===date && String(x.values[1])===playerId && String(x.values[2])===category);
   const values=[date,playerId,category,done,extra,new Date()];
   if(found) sheet.getRange(found.row,1,1,6).setValues([values]); else sheet.appendRow(values);
 }
 function deleteRowsWhere_(sheet,predicate){
-  const rows=dataRowsWithRow_(sheet).filter(x=>predicate(x.values)).map(x=>x.row).sort((a,b)=>b-a); rows.forEach(r=>sheet.deleteRow(r));
+  const rows=dataRowsWithRow_(sheet).filter(x=>predicate(x.values)).map(x=>x.row).sort((a,b)=>b-a);
+  rows.forEach(r=>sheet.deleteRow(r));
 }
-function sheet_(name){ const s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name); if(!s) throw new Error('Missing sheet: '+name+'. Run setupHealthQuest().'); return s; }
-function dataRows_(sheet){ const last=sheet.getLastRow(); return last<2?[]:sheet.getRange(2,1,last-1,sheet.getLastColumn()).getValues(); }
+function sheet_(name){
+  const s=SpreadsheetApp.getActiveSpreadsheet().getSheetByName(name);
+  if(!s) throw new Error('Missing sheet: '+name+'. Run setupHealthQuest().');
+  return s;
+}
+function dataRows_(sheet){
+  const last=sheet.getLastRow();
+  return last<2?[]:sheet.getRange(2,1,last-1,sheet.getLastColumn()).getValues();
+}
 function dataRowsWithRow_(sheet){ return dataRows_(sheet).map((values,i)=>({row:i+2,values:values})); }
-function ensureSheet_(ss,name,headers){ let s=ss.getSheetByName(name); if(!s) s=ss.insertSheet(name); if(s.getLastRow()===0) s.appendRow(headers); else s.getRange(1,1,1,headers.length).setValues([headers]); return s; }
-function readConfig_(){ const rows=dataRows_(sheet_(HQ.SHEETS.CONFIG)); const o={}; rows.forEach(r=>{if(r[0]) o[String(r[0])]=String(r[1]);}); return o; }
-function setConfig_(key,value){ const sheet=sheet_(HQ.SHEETS.CONFIG); const rows=dataRowsWithRow_(sheet); const f=rows.find(x=>String(x.values[0])===key); if(f) sheet.getRange(f.row,2).setValue(value); else sheet.appendRow([key,value]); }
+function ensureSheet_(ss,name,headers){
+  let s=ss.getSheetByName(name);
+  if(!s) s=ss.insertSheet(name);
+  if(s.getMaxColumns() < headers.length) s.insertColumnsAfter(s.getMaxColumns(), headers.length - s.getMaxColumns());
+  if(s.getLastRow()===0) s.appendRow(headers);
+  else s.getRange(1,1,1,headers.length).setValues([headers]);
+  return s;
+}
+function readConfig_(){
+  const rows=dataRows_(sheet_(HQ.SHEETS.CONFIG)); const o={};
+  rows.forEach(r=>{if(r[0]) o[String(r[0])]=String(r[1]);}); return o;
+}
+function setConfig_(key,value){
+  const sheet=sheet_(HQ.SHEETS.CONFIG); const rows=dataRowsWithRow_(sheet);
+  const f=rows.find(x=>String(x.values[0])===key);
+  if(f) sheet.getRange(f.row,2).setValue(value); else sheet.appendRow([key,value]);
+}
 function formatSheets_(){
-  const ss=SpreadsheetApp.getActiveSpreadsheet(); Object.values(HQ.SHEETS).forEach(name=>{ const s=ss.getSheetByName(name); if(!s) return; s.setFrozenRows(1); const lastCol=Math.max(1,s.getLastColumn()); s.getRange(1,1,1,lastCol).setFontWeight('bold').setBackground('#1f6655').setFontColor('#ffffff'); s.autoResizeColumns(1,lastCol); });
+  const ss=SpreadsheetApp.getActiveSpreadsheet();
+  Object.values(HQ.SHEETS).forEach(name=>{
+    const s=ss.getSheetByName(name); if(!s) return;
+    s.setFrozenRows(1);
+    const lastCol=Math.max(1,s.getLastColumn());
+    s.getRange(1,1,1,lastCol).setFontWeight('bold').setBackground('#1f6655').setFontColor('#ffffff');
+    s.autoResizeColumns(1,lastCol);
+  });
   const cfg=ss.getSheetByName(HQ.SHEETS.CONFIG); if(cfg) cfg.setColumnWidths(1,2,180);
+  const goals=ss.getSheetByName(HQ.SHEETS.GOALS); if(goals && goals.getMaxColumns()>=5) goals.setColumnWidth(5,340);
 }
 function json_(obj){ return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
