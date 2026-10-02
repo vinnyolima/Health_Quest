@@ -1,4 +1,4 @@
-import { API_URL } from "./config.js?v=5";
+import { API_URL } from "./config.js?v=7";
 
 const CATEGORIES = [
   { key:"diet", label:"🥗 Diet" },
@@ -123,16 +123,29 @@ function streakXP(playerId,cat){
   let run=0,xp=0; for(const d of monthDates()){ if(checkin(playerId,d,cat)?.done){run++; if(run%3===0) xp+=10;} else run=0; } return xp;
 }
 function extraXP(playerId){ return state.checkins.filter(x=>x.playerId===playerId && x.extra).length*5; }
-function majorXP(playerId){
-  const goals=goalsFor(playerId); let total=0;
-  for(const c of CATEGORIES){
-    const g=goals[c.key]; if(!g) continue;
-    const needed=Math.ceil(Number(g.target)*31);
-    if(completedCount(playerId,c.key)>=needed) total+=majorReward(g.rank,g.target);
-  }
-  return total;
+function majorProgressXPForCategory(playerId, cat){
+  const g=goalsFor(playerId)[cat];
+  if(!g) return 0;
+  const needed=Math.ceil(Number(g.target)*31);
+  const done=Math.min(completedCount(playerId,cat),needed);
+  return Math.round(majorReward(g.rank,g.target) * done / needed);
 }
-function totalXP(playerId){ return majorXP(playerId)+extraXP(playerId)+CATEGORIES.reduce((s,c)=>s+streakXP(playerId,c.key),0); }
+function majorXP(playerId){
+  return CATEGORIES.reduce((sum,c)=>sum+majorProgressXPForCategory(playerId,c.key),0);
+}
+function randomCheckXP(playerId){
+  return (state.randomChecks||[]).filter(r=>{
+    const assignedPlayer=String(r.playerId||"")===String(playerId);
+    const completedAndVerified=String(r.status||"")==="Verified";
+    return assignedPlayer && completedAndVerified;
+  }).length * 5;
+}
+function totalXP(playerId){
+  return majorXP(playerId)
+    + extraXP(playerId)
+    + randomCheckXP(playerId)
+    + CATEGORIES.reduce((s,c)=>s+streakXP(playerId,c.key),0);
+}
 
 function renderGoalEditor(){
   $("#setupPlayerName").textContent=session.name; const wrap=$("#goalEditor"); wrap.innerHTML="";
@@ -191,7 +204,8 @@ function renderRandomCheck(){
     <div class="random-category">${c?.label||rc.category}</div>
     <div class="audit-definition"><strong>Goal definition:</strong> ${escapeHtml(definition)}</div>
     <p class="muted">Claimed complete: <strong>${claim?"Yes":"Not yet"}</strong></p>
-    <p class="muted">Use the definition above when auditing the check. Send proof in your group chat, then record the result below.</p>`;
+    <p class="muted">Use the definition above when auditing the check. Send proof in your group chat, then record the result below.</p>
+    <p class="muted"><strong>Random-check bonus:</strong> the assigned player earns +5 XP when this check is verified.</p>`;
   $("#verificationButtons").classList.remove("hidden");
 }
 async function setVerification(status){
@@ -200,11 +214,11 @@ async function setVerification(status){
 }
 function renderLeaderboard(){
   const list=state.players.map(p=>({...p,xp:totalXP(p.playerId)})).sort((a,b)=>b.xp-a.xp); const max=Math.max(1,...list.map(x=>x.xp));
-  $("#leaderboard").innerHTML=list.map((p,i)=>`<div class="leader-row"><div class="rank">#${i+1}</div><div><div class="leader-name">${escapeHtml(p.name)}${p.playerId===session.playerId?" · you":""}</div><div class="bar"><span style="width:${Math.round(p.xp/max*100)}%"></span></div></div><div class="leader-score">${p.xp} XP</div></div>`).join("");
+  $("#leaderboard").innerHTML=list.map((p,i)=>`<div class="leader-row"><div class="rank">#${i+1}</div><div><div class="leader-name">${escapeHtml(p.name)}${p.playerId===session.playerId?" · you":""}</div><div class="bar"><span style="width:${Math.round(p.xp/max*100)}%"></span></div><div class="progress-meta">${majorXP(p.playerId)} major · ${CATEGORIES.reduce((s,c)=>s+streakXP(p.playerId,c.key),0)} streak · ${extraXP(p.playerId)} extra · ${randomCheckXP(p.playerId)} random check</div></div><div class="leader-score">${p.xp} XP</div></div>`).join("");
 }
 function renderProgress(){
-  const goals=goalsFor(session.playerId); $("#progressGrid").innerHTML=CATEGORIES.map(c=>{ const g=goals[c.key]; const done=completedCount(session.playerId,c.key); const needed=Math.ceil(Number(g.target)*31); const pct=Math.min(100,Math.round(done/needed*100)); const major=majorReward(g.rank,g.target);
-    return `<div class="progress-card"><div class="progress-title">${c.label}</div><div class="progress-number">${done}/${needed}</div><div class="muted">${Math.round(Number(g.target)*100)}% target · difficulty #${g.rank}</div><div class="bar"><span style="width:${pct}%"></span></div><div class="xp-breakdown">${major} major XP · ${streakXP(session.playerId,c.key)} streak XP</div></div>`; }).join("");
+  const goals=goalsFor(session.playerId); $("#progressGrid").innerHTML=CATEGORIES.map(c=>{ const g=goals[c.key]; const done=completedCount(session.playerId,c.key); const needed=Math.ceil(Number(g.target)*31); const pct=Math.min(100,Math.round(done/needed*100)); const majorMax=majorReward(g.rank,g.target); const majorEarned=majorProgressXPForCategory(session.playerId,c.key);
+    return `<div class="progress-card"><div class="progress-title">${c.label}</div><div class="progress-number">${done}/${needed}</div><div class="muted">${Math.round(Number(g.target)*100)}% target · difficulty #${g.rank}</div><div class="bar"><span style="width:${pct}%"></span></div><div class="xp-breakdown">${majorEarned}/${majorMax} major XP · ${streakXP(session.playerId,c.key)} streak XP</div></div>`; }).join("");
 }
 function renderGroupGoals(){
   const wrap=$("#groupGoals");
@@ -244,7 +258,7 @@ function renderAudit(){
         <td>${escapeHtml(player?.name||"Player")}</td>
         <td>${cat?.label||escapeHtml(r.category)}</td>
         <td>${escapeHtml(goalDefinition(r.playerId,r.category))}</td>
-        <td><span class="status-chip ${(r.status||"Pending").toLowerCase()}">${escapeHtml(r.status||"Pending")}</span></td>
+        <td><span class="status-chip ${(r.status||"Pending").toLowerCase()}">${escapeHtml(r.status||"Pending")}</span>${r.status==="Verified" ? " · assigned player +5 XP" : ""}</td>
         <td>${escapeHtml(reviewer?.name || (r.reviewedBy ? "Player" : "—"))}</td>
       </tr>`;
     }).join("")}</tbody>

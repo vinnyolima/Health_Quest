@@ -1,37 +1,27 @@
-# Health Quest v5 — scoring update
+# Health Quest v7 — corrected random-check bonus
 
-This update changes only Major Goal XP scoring.
+This fixes the random-check +5 XP rule.
 
-No Google Sheet changes are needed.
-No Apps Script changes are needed.
-Do not erase any data.
-Players do not need to re-enter their goals or descriptions.
+## Correct rule
 
-## New Major Goal XP
+The +5 XP goes to the PLAYER WHO WAS ASSIGNED THE RANDOM CHECK, not the person who verifies it.
 
-| Target | #1 Hardest | #2 | #3 | #4 Easiest |
-|---|---:|---:|---:|---:|
-| 60% | 320 | 240 | 180 | 100 |
-| 70% | 280 | 230 | 190 | 125 |
-| 80% | 240 | 220 | 200 | 150 |
-| 90% | 200 | 210 | 210 | 175 |
-| 100% | 160 | 200 | 220 | 200 |
+- Verified random check → assigned player gets +5 XP
+- Failed random check → no +5 XP, and the completion is removed as before
+- Excused random check → no +5 XP
+- The verifier gets no XP
 
-The hardest category rewards a realistic lower commitment more.
-The easiest category rewards a higher commitment more.
-Ranks #2 and #3 transition gradually between those two patterns.
+No Google Sheet or Apps Script changes are required.
 
 ## GitHub update
 
 At the ROOT of your GitHub repository:
 
-1. Replace `index.html` with the included file.
-2. Add `app-v5.js`.
-3. Leave `config.js`, `styles.css`, Google Sheets, and Apps Script unchanged.
+1. Replace `index.html`
+2. Add `app-v7.js`
+3. Leave `config.js`, `styles.css`, Google Sheets, and `Code.gs` unchanged.
 
-You can leave the older JavaScript files in the repo. The new index.html loads app-v5.js.
+Once v7 works, you may delete the older app-v6.js and earlier app files.
 
-After GitHub Pages redeploys, open:
-https://vinnyolima.github.io/Health_Quest/?v=5
-
-Existing saved ranks and targets are automatically recalculated under the new scoring table.
+Open after deployment:
+https://vinnyolima.github.io/Health_Quest/?v=7
