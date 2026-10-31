@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#143b37">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>Health Quest</title>
+  <title>Health Quest — Nov + Dec</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=9">
 </head>
 <body>
   <div class="app-shell">
@@ -23,45 +23,64 @@
     <main>
       <section id="connectView" class="card intro-card">
         <div class="hero-icon">🏆</div>
-        <h2>October Health Quest</h2>
-        <p>Connect to your private challenge sheet, then join as one of three players.</p>
+        <h2>November + December Health Quest</h2>
+        <p>Two months of daily goals, 5-day streaks, weekly hard challenges, and random verification.</p>
 
         <div class="field-grid">
-          <label>
-            Group code
+          <label>Group code
             <input id="groupCode" maxlength="8" autocomplete="off" placeholder="ABC123">
           </label>
-          <label>
-            Group PIN
+          <label>Group PIN
             <input id="groupPin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="1234">
           </label>
         </div>
 
-        <label>
-          Your name
-          <input id="playerName" maxlength="24" autocomplete="name" placeholder="e.g. Alex">
-        </label>
+        <div class="field-grid">
+          <label>Your name
+            <input id="playerName" maxlength="24" autocomplete="name" placeholder="e.g. Alex">
+          </label>
+          <label>Your emoji avatar
+            <input id="playerAvatar" maxlength="12" autocomplete="off" placeholder="e.g. 🐉">
+          </label>
+        </div>
 
         <button id="joinBtn" class="primary wide">Join challenge</button>
         <p id="connectMsg" class="message"></p>
-        <details class="help-box">
-          <summary>Where do I get the group code and PIN?</summary>
-          <p>The spreadsheet owner gets both from the <strong>Config</strong> tab after running the included Google Apps Script setup.</p>
-        </details>
       </section>
 
       <section id="setupView" class="hidden">
         <div class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">SET YOUR PERSONAL CHALLENGE</div>
-              <h2>Rank your habits</h2>
+              <div class="eyebrow">SET YOUR NOVEMBER + DECEMBER CHALLENGE</div>
+              <h2>Daily major goals</h2>
             </div>
             <span id="setupPlayerName" class="pill"></span>
           </div>
-          <p class="muted">Use each difficulty rank once. Rank #1 is your hardest habit. Major-goal XP adapts to difficulty: harder habits reward realistic lower targets, while easier habits reward higher commitments. Then describe exactly what a successful day means for that category.</p>
+
+          <label>Your emoji avatar
+            <input id="setupAvatar" maxlength="12" autocomplete="off" placeholder="e.g. 🐉">
+          </label>
+
+          <p class="muted">
+            Use each difficulty rank once. Everyone has the same 300 Major Goal XP available:
+            #1 hardest = 120 XP, #2 = 90 XP, #3 = 60 XP, #4 easiest = 30 XP.
+            Your chosen percentage changes the number of days required, not the maximum XP.
+          </p>
+
           <div id="goalEditor" class="goal-editor"></div>
-          <button id="saveGoalsBtn" class="primary wide">Save goals & definitions</button>
+        </div>
+
+        <div class="card">
+          <div class="eyebrow">WEEKLY CHALLENGE POOL</div>
+          <h2>Submit 3 hard weekly tasks</h2>
+          <p class="muted">
+            Add exactly 1 Fitness, 1 Nutrition, and 1 Spiritual / Mindfulness challenge.
+            Every Sunday, each player receives one fresh random task from the combined group pool.
+            A completed weekly task earns 30 XP.
+          </p>
+          <div id="weeklyTaskEditor"></div>
+          <button id="saveGoalsBtn" class="primary wide">Save challenge setup</button>
           <p id="goalMsg" class="message"></p>
         </div>
       </section>
@@ -74,13 +93,25 @@
             <div id="challengeStatus" class="muted"></div>
           </div>
           <div class="hero-actions">
-            <button id="editGoalsBtn" class="small-button">Edit goal details</button>
+            <button id="editGoalsBtn" class="small-button">Edit setup</button>
             <div class="xp-orb">
               <strong id="myXp">0</strong>
               <span>XP</span>
             </div>
           </div>
         </div>
+
+        <section class="card weekly-highlight">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">THIS WEEK</div>
+              <h3 id="weeklyTitle">Weekly challenges</h3>
+            </div>
+            <span class="pill">30 XP each</span>
+          </div>
+          <div id="weeklyAssignments"></div>
+          <p id="weeklyMsg" class="message"></p>
+        </section>
 
         <div class="two-col">
           <section class="card">
@@ -127,10 +158,10 @@
         <section class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">YOUR MONTH</div>
-              <h3>Goal progress</h3>
+              <div class="eyebrow">YOUR TWO MONTHS</div>
+              <h3>Major goal progress</h3>
             </div>
-            <span class="muted">October 1–31</span>
+            <span class="muted">Nov 1 – Dec 31</span>
           </div>
           <div id="progressGrid" class="progress-grid"></div>
         </section>
@@ -143,8 +174,18 @@
             </div>
             <span class="muted">Visible to all players</span>
           </div>
-          <p class="muted">These descriptions make random verification fair: everyone can see exactly what each player committed to.</p>
           <div id="groupGoals"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">WEEKLY HISTORY</div>
+              <h3>Assigned weekly challenges</h3>
+            </div>
+            <span class="muted">Sunday starts</span>
+          </div>
+          <div id="weeklyHistory"></div>
         </section>
 
         <section class="card">
@@ -161,10 +202,11 @@
         <section class="card rules-card">
           <div class="eyebrow">HOW SCORING WORKS</div>
           <div class="rules-grid">
-            <div><strong>🏆 Major goals</strong><span>Most of the XP. Major XP is earned progressively as you complete days, up to the category’s full reward.</span></div>
-            <div><strong>🔥 Streaks</strong><span>Every 3 consecutive days in one category earns +10 XP.</span></div>
-            <div><strong>⚡ Extra effort</strong><span>One extra effort bonus per category per day earns +5 XP.</span></div>
-            <div><strong>🎲 Random check</strong><span>One player and category are frozen for each day. A failed check removes that completion. If the assigned player passes the random check, they earn +5 XP.</span></div>
+            <div><strong>🏆 Major goals</strong><span>300 XP total available to everyone: 120 / 90 / 60 / 30 by difficulty rank. XP accrues proportionally toward each target.</span></div>
+            <div><strong>🔥 Streaks</strong><span>Every 5 consecutive days in one daily category earns +10 XP.</span></div>
+            <div><strong>🗓 Weekly challenge</strong><span>Every Sunday each player gets one random task from the group pool. Completing it earns +30 XP.</span></div>
+            <div><strong>⚡ Extra effort</strong><span>One extra-effort bonus per category per day earns +5 XP.</span></div>
+            <div><strong>🎲 Random check</strong><span>One player and one daily category are freshly drawn at random each day. Verified assigned player earns +5 XP.</span></div>
           </div>
         </section>
       </section>
@@ -176,13 +218,13 @@
       <div class="goal-title"></div>
       <label>Difficulty
         <select class="rank-select">
-          <option value="1">#1 hardest</option>
-          <option value="2">#2</option>
-          <option value="3">#3</option>
-          <option value="4">#4 easiest</option>
+          <option value="1">#1 hardest · 120 XP</option>
+          <option value="2">#2 · 90 XP</option>
+          <option value="3">#3 · 60 XP</option>
+          <option value="4">#4 easiest · 30 XP</option>
         </select>
       </label>
-      <label>Monthly target
+      <label>Two-month target
         <select class="target-select">
           <option value="0.6">60%</option>
           <option value="0.7">70%</option>
@@ -192,12 +234,12 @@
         </select>
       </label>
       <div class="goal-reward"></div>
-      <label class="goal-description">What does success look like for you?
+      <label class="goal-description">What does a successful day mean?
         <textarea class="description-input" maxlength="240" rows="3" placeholder="Example: Drink at least 3L of water today."></textarea>
       </label>
     </div>
   </template>
 
-  <script type="module" src="app-v7.js?v=7"></script>
+  <script type="module" src="app-v9.js?v=9"></script>
 </body>
 </html>
