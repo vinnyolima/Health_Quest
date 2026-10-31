@@ -1,0 +1,9 @@
+{
+  "name": "Health Quest \u2014 Nov + Dec",
+  "short_name": "Health Quest",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f8f6",
+  "theme_color": "#143b37",
+  "icons": []
+}
