@@ -615,8 +615,6 @@ function renderGame(){
   renderLeaderboard();
   renderProgress();
   renderGroupGoals();
-  renderWeeklyHistory();
-  renderAudit();
 }
 
 function escapeHtml(s){
