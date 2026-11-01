@@ -408,26 +408,34 @@ function renderWeeklyAssignments(){
   const rows=(state.weeklyAssignments||[]).filter(a=>a.weekStart===week);
 
   if(rows.length<state.players.length){
-    wrap.innerHTML=`<div class="empty-state">Waiting for all 3 players to submit their 3 weekly challenge ideas before this week's assignments can be drawn.</div>`;
+    wrap.innerHTML=`<div class="empty-state">Waiting for all 3 players to submit their 3 weekly challenge ideas before this week's task can be drawn.</div>`;
     return;
   }
 
-  wrap.innerHTML=rows.map(a=>{
-    const p=state.players.find(x=>x.playerId===a.playerId);
-    const cat=WEEKLY_CATEGORIES.find(x=>x.key===a.category);
-    const mine=a.playerId===session.playerId;
-    return `<div class="weekly-assignment ${mine?"mine":""}">
-      <div>
-        <div class="weekly-player">${escapeHtml(p?.avatar||"🙂")} ${escapeHtml(p?.name||"Player")}${mine?" · you":""}</div>
-        <div class="weekly-category">${cat?.label||escapeHtml(a.category)}</div>
-        <div class="weekly-task-text">${escapeHtml(a.taskText)}</div>
-      </div>
-      <div class="weekly-action">
-        <span class="status-chip ${a.status.toLowerCase()}">${escapeHtml(a.status)}</span>
-        ${mine?`<button class="weekly-complete-btn" data-week="${a.weekStart}" data-completed="${a.status==="Completed"?"false":"true"}">${a.status==="Completed"?"Undo":"Mark complete +30 XP"}</button>`:""}
-      </div>
-    </div>`;
-  }).join("");
+  // One shared task for the whole group. The backend keeps one row per player only
+  // so completion and XP can be tracked separately.
+  const shared=rows[0];
+  const cat=WEEKLY_CATEGORIES.find(x=>x.key===shared.category);
+  const mine=rows.find(a=>a.playerId===session.playerId);
+
+  const completionSummary=state.players.map(p=>{
+    const a=rows.find(x=>x.playerId===p.playerId);
+    const done=a?.status==="Completed";
+    return `<span class="pill">${escapeHtml(p.avatar||"🙂")} ${escapeHtml(p.name)}: ${done?"✓ Done":"Pending"}</span>`;
+  }).join(" ");
+
+  wrap.innerHTML=`<div class="weekly-assignment mine">
+    <div>
+      <div class="weekly-player">🌍 Group weekly challenge</div>
+      <div class="weekly-category">${cat?.label||escapeHtml(shared.category)}</div>
+      <div class="weekly-task-text">${escapeHtml(shared.taskText)}</div>
+      <div class="weekly-group-status" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">${completionSummary}</div>
+    </div>
+    <div class="weekly-action">
+      <span class="status-chip ${(mine?.status||"Pending").toLowerCase()}">${escapeHtml(mine?.status||"Pending")}</span>
+      <button class="weekly-complete-btn" data-week="${shared.weekStart}" data-completed="${mine?.status==="Completed"?"false":"true"}">${mine?.status==="Completed"?"Undo":"Mark complete +30 XP"}</button>
+    </div>
+  </div>`;
 }
 
 async function setWeeklyCompletion(weekStart,completed){
