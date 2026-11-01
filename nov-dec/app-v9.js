@@ -3,7 +3,7 @@ import { API_URL } from "./config.js?v=9";
 const CATEGORIES = [
   { key:"diet", label:"🥗 Diet" },
   { key:"water", label:"💧 Water" },
-  { key:"stretch", label:"🧘 Stretch" },
+  { key:"stretch", label:"🧘 Stretch Mind/Body" },
   { key:"exercise", label:"🏋️ Exercise" }
 ];
 
